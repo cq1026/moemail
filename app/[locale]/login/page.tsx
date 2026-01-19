@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import type { Locale } from "@/i18n/config"
 import { getTurnstileConfig } from "@/lib/turnstile"
+import { getRequestContext } from "@cloudflare/next-on-pages"
 import { Suspense } from "react"
 
 export const runtime = "edge"
@@ -20,12 +21,19 @@ export default async function LoginPage({
     redirect(`/${locale}`)
   }
 
-  const turnstile = await getTurnstileConfig()
+  const env = getRequestContext().env
+  const [turnstile, registrationDisabled] = await Promise.all([
+    getTurnstileConfig(),
+    env.SITE_CONFIG.get("REGISTRATION_DISABLED")
+  ])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <Suspense fallback={<div className="w-[95%] max-w-lg h-[500px] border-2 border-primary/20 rounded-lg animate-pulse bg-gray-100 dark:bg-gray-800" />}>
-        <LoginForm turnstile={{ enabled: turnstile.enabled, siteKey: turnstile.siteKey }} />
+        <LoginForm
+          turnstile={{ enabled: turnstile.enabled, siteKey: turnstile.siteKey }}
+          registrationDisabled={registrationDisabled === "true"}
+        />
       </Suspense>
     </div>
   )
