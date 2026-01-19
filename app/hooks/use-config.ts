@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import { Role, ROLES } from "@/lib/permissions"
 import { EMAIL_CONFIG } from "@/config"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 interface Config {
   defaultRole: Exclude<Role, typeof ROLES.EMPEROR>
@@ -18,14 +18,17 @@ interface ConfigStore {
   config: Config | null
   loading: boolean
   error: string | null
+  fetched: boolean
   fetch: () => Promise<void>
 }
 
-const useConfigStore = create<ConfigStore>((set) => ({
+const useConfigStore = create<ConfigStore>((set, get) => ({
   config: null,
   loading: false,
   error: null,
+  fetched: false,
   fetch: async () => {
+    if (get().fetched || get().loading) return
     try {
       set({ loading: true, error: null })
       const res = await fetch("/api/config")
@@ -40,12 +43,14 @@ const useConfigStore = create<ConfigStore>((set) => ({
           maxEmails: Number(data.maxEmails) || EMAIL_CONFIG.MAX_ACTIVE_EMAILS,
           registrationDisabled: data.registrationDisabled ?? false
         },
-        loading: false
+        loading: false,
+        fetched: true
       })
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "获取配置失败",
-        loading: false
+        loading: false,
+        fetched: true
       })
     }
   }
@@ -53,12 +58,14 @@ const useConfigStore = create<ConfigStore>((set) => ({
 
 export function useConfig() {
   const store = useConfigStore()
+  const fetchedRef = useRef(false)
 
   useEffect(() => {
-    if (!store.config && !store.loading) {
+    if (!fetchedRef.current && !store.fetched && !store.loading) {
+      fetchedRef.current = true
       store.fetch()
     }
-  }, [store.config, store.loading])
+  }, [store.fetched, store.loading, store.fetch])
 
   return store
-} 
+}
