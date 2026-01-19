@@ -161,41 +161,44 @@ export const {
       },
     }),
   ],
-  events: {
+  callbacks: {
     async signIn({ user, account }) {
-      if (!user.id) return
+      if (!user.id || account?.provider === "credentials") {
+        return true
+      }
 
       try {
         const db = createDb()
 
         // 检查是否是新用户（通过第三方登录）
-        // 如果用户还没有角色分配，说明是第一次登录（新用户）
         const existingRole = await db.query.userRoles.findFirst({
           where: eq(userRoles.userId, user.id),
         })
 
         // 如果是第三方登录的新用户，检查是否禁止注册
-        if (!existingRole && account?.provider !== "credentials") {
+        if (!existingRole) {
           const registrationDisabled = await getRequestContext().env.SITE_CONFIG.get("REGISTRATION_DISABLED")
           if (registrationDisabled === "true") {
             // 删除刚刚被 adapter 创建的用户记录
             await db.delete(users).where(eq(users.id, user.id))
-            throw new Error("注册功能已关闭")
+            // 删除关联的 account 记录
+            await db.delete(accounts).where(eq(accounts.userId, user.id))
+            // 返回错误 URL，前端会显示错误
+            return "/login?error=RegistrationDisabled"
           }
+
+          // 分配默认角色
+          const defaultRole = await getDefaultRole()
+          const role = await findOrCreateRole(db, defaultRole)
+          await assignRoleToUser(db, user.id, role.id)
         }
 
-        if (existingRole) return
-
-        const defaultRole = await getDefaultRole()
-        const role = await findOrCreateRole(db, defaultRole)
-        await assignRoleToUser(db, user.id, role.id)
+        return true
       } catch (error) {
-        console.error('Error in signIn event:', error)
-        throw error
+        console.error('Error in signIn callback:', error)
+        return false
       }
     },
-  },
-  callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id

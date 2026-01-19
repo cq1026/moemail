@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useTranslations } from "next-intl"
 import { useToast } from "@/components/ui/use-toast"
@@ -23,6 +23,7 @@ import { Github, Loader2, KeyRound, User2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Turnstile } from "@/components/auth/turnstile"
 import { useConfig } from "@/hooks/use-config"
+import { useSearchParams } from "next/navigation"
 
 interface TurnstileConfigProps {
   enabled: boolean
@@ -52,10 +53,25 @@ export function LoginForm({ turnstile, registrationDisabled: propRegistrationDis
   const { toast } = useToast()
   const t = useTranslations("auth.loginForm")
   const { config } = useConfig()
+  const searchParams = useSearchParams()
 
   const turnstileSiteKey = turnstile?.siteKey ?? ""
   const turnstileEnabled = Boolean(turnstile?.enabled && turnstileSiteKey)
   const registrationDisabled = propRegistrationDisabled ?? config?.registrationDisabled ?? false
+
+  // 检测 URL 中的 error 参数，显示第三方登录错误
+  useEffect(() => {
+    const error = searchParams.get("error")
+    if (error === "RegistrationDisabled") {
+      toast({
+        title: t("toast.registrationDisabled"),
+        description: t("toast.registrationDisabledDesc"),
+        variant: "destructive",
+      })
+      // 清除 URL 中的 error 参数
+      window.history.replaceState({}, "", window.location.pathname)
+    }
+  }, [searchParams, toast, t])
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("")
