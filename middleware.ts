@@ -23,6 +23,11 @@ export async function middleware(request: Request) {
       return NextResponse.next()
     }
 
+    // 允许未登录用户访问 /api/config GET（公开配置）
+    if (pathname === '/api/config' && request.method === 'GET') {
+      return NextResponse.next()
+    }
+
     request.headers.delete("X-User-Id")
     const apiKey = request.headers.get("X-API-Key")
     if (apiKey) {
@@ -35,10 +40,6 @@ export async function middleware(request: Request) {
         { error: "未授权" },
         { status: 401 }
       )
-    }
-
-    if (pathname === '/api/config' && request.method === 'GET') {
-      return NextResponse.next()
     }
 
     for (const [route, permission] of Object.entries(API_PERMISSIONS)) {
