@@ -144,7 +144,7 @@ export function CreateDialog({ onEmailCreated }: CreateDialogProps) {
               className="flex gap-6"
             >
               {EXPIRY_OPTIONS.map((option, index) => {
-                const labels = [t("oneHour"), t("oneDay"), t("threeDays"), t("permanent")]
+                const labels = [t("oneHour"), t("oneDay"), t("threeDays"), t("thirtyDays"), t("permanent")]
                 return (
                   <div key={option.value} className="flex items-center gap-2">
                     <RadioGroupItem value={option.value.toString()} id={option.value.toString()} />

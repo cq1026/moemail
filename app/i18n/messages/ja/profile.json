@@ -107,6 +107,8 @@
     "adminContact": "管理者連絡先",
     "adminContactPlaceholder": "メールまたはその他の連絡先",
     "maxEmails": "ユーザーあたりの最大メールボックス数",
+    "registrationDisabled": "新規ユーザー登録を無効化",
+    "registrationDisabledDescription": "有効にすると、新規ユーザーはどの方法でも登録できなくなります（フォームおよびサードパーティログインを含む）",
     "turnstile": {
       "enable": "Cloudflare Turnstile を有効化",
       "enableDescription": "有効にすると、ユーザー名とパスワードでのログイン・登録に Turnstile 認証が必要になります",

@@ -162,14 +162,27 @@ export const {
     }),
   ],
   events: {
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       if (!user.id) return
 
       try {
         const db = createDb()
+
+        // 检查是否是新用户（通过第三方登录）
+        // 如果用户还没有角色分配，说明是第一次登录（新用户）
         const existingRole = await db.query.userRoles.findFirst({
           where: eq(userRoles.userId, user.id),
         })
+
+        // 如果是第三方登录的新用户，检查是否禁止注册
+        if (!existingRole && account?.provider !== "credentials") {
+          const registrationDisabled = await getRequestContext().env.SITE_CONFIG.get("REGISTRATION_DISABLED")
+          if (registrationDisabled === "true") {
+            // 删除刚刚被 adapter 创建的用户记录
+            await db.delete(users).where(eq(users.id, user.id))
+            throw new Error("注册功能已关闭")
+          }
+        }
 
         if (existingRole) return
 
@@ -177,7 +190,8 @@ export const {
         const role = await findOrCreateRole(db, defaultRole)
         await assignRoleToUser(db, user.id, role.id)
       } catch (error) {
-        console.error('Error assigning role:', error)
+        console.error('Error in signIn event:', error)
+        throw error
       }
     },
   },

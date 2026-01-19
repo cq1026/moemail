@@ -22,6 +22,7 @@ import {
 import { Github, Loader2, KeyRound, User2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Turnstile } from "@/components/auth/turnstile"
+import { useConfig } from "@/hooks/use-config"
 
 interface TurnstileConfigProps {
   enabled: boolean
@@ -30,6 +31,7 @@ interface TurnstileConfigProps {
 
 interface LoginFormProps {
   turnstile?: TurnstileConfigProps
+  registrationDisabled?: boolean
 }
 
 interface FormErrors {
@@ -38,7 +40,7 @@ interface FormErrors {
   confirmPassword?: string
 }
 
-export function LoginForm({ turnstile }: LoginFormProps) {
+export function LoginForm({ turnstile, registrationDisabled: propRegistrationDisabled }: LoginFormProps) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -49,9 +51,11 @@ export function LoginForm({ turnstile }: LoginFormProps) {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login")
   const { toast } = useToast()
   const t = useTranslations("auth.loginForm")
+  const { config } = useConfig()
 
   const turnstileSiteKey = turnstile?.siteKey ?? ""
   const turnstileEnabled = Boolean(turnstile?.enabled && turnstileSiteKey)
+  const registrationDisabled = propRegistrationDisabled ?? config?.registrationDisabled ?? false
 
   const resetTurnstile = useCallback(() => {
     setTurnstileToken("")
@@ -216,9 +220,11 @@ export function LoginForm({ turnstile }: LoginFormProps) {
       </CardHeader>
       <CardContent className="px-6">
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className={cn("grid w-full mb-6", registrationDisabled ? "grid-cols-1" : "grid-cols-2")}>
             <TabsTrigger value="login">{t("tabs.login")}</TabsTrigger>
-            <TabsTrigger value="register">{t("tabs.register")}</TabsTrigger>
+            {!registrationDisabled && (
+              <TabsTrigger value="register">{t("tabs.register")}</TabsTrigger>
+            )}
           </TabsList>
           <div className="min-h-[220px]">
             <TabsContent value="login" className="space-y-4 mt-0">

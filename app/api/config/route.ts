@@ -16,7 +16,8 @@ export async function GET() {
     maxEmails,
     turnstileEnabled,
     turnstileSiteKey,
-    turnstileSecretKey
+    turnstileSecretKey,
+    registrationDisabled
   ] = await Promise.all([
     env.SITE_CONFIG.get("DEFAULT_ROLE"),
     env.SITE_CONFIG.get("EMAIL_DOMAINS"),
@@ -24,7 +25,8 @@ export async function GET() {
     env.SITE_CONFIG.get("MAX_EMAILS"),
     env.SITE_CONFIG.get("TURNSTILE_ENABLED"),
     env.SITE_CONFIG.get("TURNSTILE_SITE_KEY"),
-    env.SITE_CONFIG.get("TURNSTILE_SECRET_KEY")
+    env.SITE_CONFIG.get("TURNSTILE_SECRET_KEY"),
+    env.SITE_CONFIG.get("REGISTRATION_DISABLED")
   ])
 
   return Response.json({
@@ -32,6 +34,7 @@ export async function GET() {
     emailDomains: emailDomains || "moemail.app",
     adminContact: adminContact || "",
     maxEmails: maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString(),
+    registrationDisabled: registrationDisabled === "true",
     turnstile: canManageConfig ? {
       enabled: turnstileEnabled === "true",
       siteKey: turnstileSiteKey || "",
@@ -54,19 +57,21 @@ export async function POST(request: Request) {
     emailDomains,
     adminContact,
     maxEmails,
+    registrationDisabled,
     turnstile
-  } = await request.json() as { 
+  } = await request.json() as {
     defaultRole: Exclude<Role, typeof ROLES.EMPEROR>,
     emailDomains: string,
     adminContact: string,
     maxEmails: string,
+    registrationDisabled?: boolean,
     turnstile?: {
       enabled: boolean,
       siteKey: string,
       secretKey: string
     }
   }
-  
+
   if (![ROLES.DUKE, ROLES.KNIGHT, ROLES.CIVILIAN].includes(defaultRole)) {
     return Response.json({ error: "无效的角色" }, { status: 400 })
   }
@@ -87,6 +92,7 @@ export async function POST(request: Request) {
     env.SITE_CONFIG.put("EMAIL_DOMAINS", emailDomains),
     env.SITE_CONFIG.put("ADMIN_CONTACT", adminContact),
     env.SITE_CONFIG.put("MAX_EMAILS", maxEmails),
+    env.SITE_CONFIG.put("REGISTRATION_DISABLED", (registrationDisabled ?? false).toString()),
     env.SITE_CONFIG.put("TURNSTILE_ENABLED", turnstileConfig.enabled.toString()),
     env.SITE_CONFIG.put("TURNSTILE_SITE_KEY", turnstileConfig.siteKey),
     env.SITE_CONFIG.put("TURNSTILE_SECRET_KEY", turnstileConfig.secretKey)

@@ -11,6 +11,7 @@ interface Config {
   emailDomainsArray: string[]
   adminContact: string
   maxEmails: number
+  registrationDisabled: boolean
 }
 
 interface ConfigStore {
@@ -29,21 +30,22 @@ const useConfigStore = create<ConfigStore>((set) => ({
       set({ loading: true, error: null })
       const res = await fetch("/api/config")
       if (!res.ok) throw new Error("获取配置失败")
-      const data = await res.json() as Config
+      const data = await res.json() as Config & { registrationDisabled?: boolean }
       set({
         config: {
           defaultRole: data.defaultRole || ROLES.CIVILIAN,
           emailDomains: data.emailDomains,
           emailDomainsArray: data.emailDomains.split(','),
           adminContact: data.adminContact || "",
-          maxEmails: Number(data.maxEmails) || EMAIL_CONFIG.MAX_ACTIVE_EMAILS
+          maxEmails: Number(data.maxEmails) || EMAIL_CONFIG.MAX_ACTIVE_EMAILS,
+          registrationDisabled: data.registrationDisabled ?? false
         },
         loading: false
       })
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : "获取配置失败",
-        loading: false 
+        loading: false
       })
     }
   }

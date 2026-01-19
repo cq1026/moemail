@@ -26,6 +26,7 @@ export function WebsiteConfigPanel() {
   const [emailDomains, setEmailDomains] = useState<string>("")
   const [adminContact, setAdminContact] = useState<string>("")
   const [maxEmails, setMaxEmails] = useState<string>(EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString())
+  const [registrationDisabled, setRegistrationDisabled] = useState(false)
   const [turnstileEnabled, setTurnstileEnabled] = useState(false)
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("")
   const [turnstileSecretKey, setTurnstileSecretKey] = useState("")
@@ -41,11 +42,12 @@ export function WebsiteConfigPanel() {
   const fetchConfig = async () => {
     const res = await fetch("/api/config")
     if (res.ok) {
-      const data = await res.json() as { 
+      const data = await res.json() as {
         defaultRole: Exclude<Role, typeof ROLES.EMPEROR>,
         emailDomains: string,
         adminContact: string,
         maxEmails: string,
+        registrationDisabled?: boolean,
         turnstile?: {
           enabled: boolean,
           siteKey: string,
@@ -56,6 +58,7 @@ export function WebsiteConfigPanel() {
       setEmailDomains(data.emailDomains)
       setAdminContact(data.adminContact)
       setMaxEmails(data.maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString())
+      setRegistrationDisabled(Boolean(data.registrationDisabled))
       setTurnstileEnabled(Boolean(data.turnstile?.enabled))
       setTurnstileSiteKey(data.turnstile?.siteKey ?? "")
       setTurnstileSecretKey(data.turnstile?.secretKey ?? "")
@@ -68,11 +71,12 @@ export function WebsiteConfigPanel() {
       const res = await fetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          defaultRole, 
+        body: JSON.stringify({
+          defaultRole,
           emailDomains,
           adminContact,
           maxEmails: maxEmails || EMAIL_CONFIG.MAX_ACTIVE_EMAILS.toString(),
+          registrationDisabled,
           turnstile: {
             enabled: turnstileEnabled,
             siteKey: turnstileSiteKey,
@@ -123,7 +127,7 @@ export function WebsiteConfigPanel() {
         <div className="flex items-center gap-4">
           <span className="text-sm">{t("emailDomains")}:</span>
           <div className="flex-1">
-            <Input 
+            <Input
               value={emailDomains}
               onChange={(e) => setEmailDomains(e.target.value)}
               placeholder={t("emailDomainsPlaceholder")}
@@ -134,7 +138,7 @@ export function WebsiteConfigPanel() {
         <div className="flex items-center gap-4">
           <span className="text-sm">{t("adminContact")}:</span>
           <div className="flex-1">
-            <Input 
+            <Input
               value={adminContact}
               onChange={(e) => setAdminContact(e.target.value)}
               placeholder={t("adminContactPlaceholder")}
@@ -145,7 +149,7 @@ export function WebsiteConfigPanel() {
         <div className="flex items-center gap-4">
           <span className="text-sm">{t("maxEmails")}:</span>
           <div className="flex-1">
-            <Input 
+            <Input
               type="number"
               min="1"
               max="100"
@@ -154,6 +158,22 @@ export function WebsiteConfigPanel() {
               placeholder={`${EMAIL_CONFIG.MAX_ACTIVE_EMAILS}`}
             />
           </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <Label htmlFor="registration-disabled" className="text-sm font-medium">
+              {t("registrationDisabled")}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t("registrationDisabledDescription")}
+            </p>
+          </div>
+          <Switch
+            id="registration-disabled"
+            checked={registrationDisabled}
+            onCheckedChange={setRegistrationDisabled}
+          />
         </div>
 
         <div className="space-y-4 rounded-lg border border-dashed border-primary/40 p-4">
@@ -213,7 +233,7 @@ export function WebsiteConfigPanel() {
           </div>
         </div>
 
-        <Button 
+        <Button
           onClick={handleSave}
           disabled={loading}
           className="w-full"
